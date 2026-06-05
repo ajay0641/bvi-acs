@@ -26,11 +26,7 @@
         "view-id": "fabd1d95-fd88-450c-8434-da0a65516b8d"
       },
 
-      "plugins": {
-        "picker": {
-          "rootCategory": "2"
-        }
-      }
+      "plugins": {}
     }
   }
 }
