@@ -2,29 +2,32 @@
   "public": {
     "default": {
       "commerce-endpoint": "https://na1-sandbox.api.commerce.adobe.com/XbwNTy4jvtMsHysm3NHkda/graphql",
+
       "headers": {
         "cs": {
-          "AC-View-ID": "{{HEADER_VALUE}}",
-          "AC-Price-Book-ID": "{{HEADER_VALUE}}"
+          "AC-View-ID": "fabd1d95-fd88-450c-8434-da0a65516b8d"
         }
       },
+
       "commerce-b2b-enabled": false,
       "commerce-companies-enabled": false,
       "commerce-assets-enabled": true,
       "adobe-commerce-optimizer": true,
+
       "analytics": {
-        "base-currency-code": "{{CURRENCY_CODE}}",
+        "base-currency-code": "USD",
         "environment": "Testing",
         "environment-id": "XbwNTy4jvtMsHysm3NHkda",
-        "locale": "{{LOCALE}}",
-        "store-url": "{{STORE_URL}}",
-        "store-view-currency-code": "{{CURRENCY_CODE}}",
-        "storefront-template": "{{TEMPLATE_TYPE}}",
-        "view-id": "{{CATALOG_VIEW_ID}}"
+        "locale": "en_US",
+        "store-url": "https://main--bvi-acs--ajay0641.aem.live",
+        "store-view-currency-code": "USD",
+        "storefront-template": "default",
+        "view-id": "fabd1d95-fd88-450c-8434-da0a65516b8d"
       },
+
       "plugins": {
         "picker": {
-          "rootCategory": "{{ROOT_CATEGORY_ID}}"
+          "rootCategory": "2"
         }
       }
     }
