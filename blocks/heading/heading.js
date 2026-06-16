@@ -1,10 +1,8 @@
 export default function decorate(block) {
-    const heading = block.querySelector('h1, h2, h3, h4, h5, h6');
-    if (heading) {
-        const level = heading.tagName[1];
-        const newHeading = document.createElement(`h${level}`);
-        newHeading.className = `heading-${level}`;
-        newHeading.append(...heading.childNodes);
-        heading.replaceWith(newHeading);
-    }
+  const text = block.textContent.trim();
+  const headingDiv = document.createElement('div');
+  headingDiv.classList.add('custom-heading');
+  headingDiv.textContent = text;
+  block.innerHTML = '';
+  block.appendChild(headingDiv);
 }
