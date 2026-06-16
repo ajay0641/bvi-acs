@@ -1,0 +1,54 @@
+{
+  "definitions": [
+    {
+      "title": "Heading",
+      "id": "heading",
+      "model": "heading",
+      "filter": "heading",
+      "plugins": {
+        "da": {
+          "rows": 1,
+          "columns": 1,
+          "fields": [
+            { "name": "text", "selector": "div>h1,div>h2,div>h3,div>h4,div>h5,div>h6" }
+          ]
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "heading",
+      "fields": [
+        {
+          "component": "richtext",
+          "valueType": "string",
+          "name": "text",
+          "value": "",
+          "label": "Text",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "filters": []
+}
+{
+  "heading": {
+    "type": "string",
+    "title": "Heading",
+    "description": "The heading text content"
+  },
+  "level": {
+    "type": "string",
+    "title": "Heading Level",
+    "description": "HTML heading level (h1-h6)",
+    "enum": ["h1", "h2", "h3", "h4", "h5", "h6"],
+    "default": "h2"
+  },
+  "class": {
+    "type": "string",
+    "title": "CSS Class",
+    "description": "Additional CSS classes for styling"
+  }
+}
