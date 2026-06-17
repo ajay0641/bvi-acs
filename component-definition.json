@@ -571,6 +571,27 @@
               "type": "key-value-block"
             }
           }
+        },
+        {
+          "title": "Title Description",
+          "id": "title-desc",
+          "model": "title-desc",
+          "plugins": {
+            "da": {
+              "rows": 1,
+              "columns": 2,
+              "fields": [
+                {
+                  "name": "title",
+                  "selector": "div:nth-child(1)"
+                },
+                {
+                  "name": "description",
+                  "selector": "div:nth-child(2)"
+                }
+              ]
+            }
+          }
         }
       ]
     },

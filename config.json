@@ -1,32 +1,41 @@
 {
   "public": {
     "default": {
-      "commerce-endpoint": "https://na1-sandbox.api.commerce.adobe.com/XbwNTy4jvtMsHysm3NHkda/graphql",
-
+      "commerce-endpoint": "https://na1-sandbox.api.commerce.adobe.com/4XR4RKXgJjQXaxUCMC6TN3/graphql",
       "headers": {
+        "all": {
+          "Store": "default"
+        },
         "cs": {
-          "AC-Environment-Id": "XbwNTy4jvtMsHysm3NHkda",
-          "AC-View-ID": "fabd1d95-fd88-450c-8434-da0a65516b8d"
+          "Magento-Store-Code": "main_website_store",
+          "Magento-Store-View-Code": "default",
+          "Magento-Website-Code": "base"
         }
       },
-
       "commerce-b2b-enabled": false,
       "commerce-companies-enabled": false,
       "commerce-assets-enabled": true,
-      "adobe-commerce-optimizer": true,
-
+      "adobe-commerce-optimizer": false,
       "analytics": {
         "base-currency-code": "USD",
         "environment": "Testing",
-        "environment-id": "XbwNTy4jvtMsHysm3NHkda",
-        "locale": "en_US",
+        "environment-id": "4XR4RKXgJjQXaxUCMC6TN3",
+        "store-code": "main_website_store",
+        "store-id": "main_website_store",
+        "store-name": "Default Store View",
         "store-url": "https://main--bvi-acs--ajay0641.aem.live",
-        "store-view-currency-code": "USD",
-        "storefront-template": "default",
-        "view-id": "fabd1d95-fd88-450c-8434-da0a65516b8d"
+        "store-view-code": "default",
+        "store-view-id": "default",
+        "store-view-name": "Default Store View",
+        "website-code": "base",
+        "website-id": "base",
+        "website-name": "Main Website"
       },
-
-      "plugins": {}
+      "plugins": {
+        "picker": {
+          "rootCategory": "2"
+        }
+      }
     }
   }
 }

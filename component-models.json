@@ -525,5 +525,26 @@
         "valueType": "string"
       }
     ]
+  },
+  {
+    "id": "title-desc",
+    "fields": [
+      {
+        "component": "richtext",
+        "valueType": "string",
+        "name": "title",
+        "value": "",
+        "label": "Title",
+        "required": true
+      },
+      {
+        "component": "richtext",
+        "valueType": "string",
+        "name": "description",
+        "value": "",
+        "label": "Description",
+        "required": true
+      }
+    ]
   }
 ]
