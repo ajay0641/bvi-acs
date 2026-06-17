@@ -32,9 +32,6 @@
           "...": "../blocks/cards/_*.json#/definitions"
         },
         {
-          "...": "../blocks/custom-cards/_*.json#/definitions"
-        },
-        {
           "...": "../blocks/carousel/_*.json#/definitions"
         },
         {
@@ -55,9 +52,6 @@
         },
         {
           "...": "../blocks/commerce-*/_*.json#/definitions"
-        },
-        {
-          "...": "../blocks/heading/_*.json#/definitions"
         }
       ]
     },
