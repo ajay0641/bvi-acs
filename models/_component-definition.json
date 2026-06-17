@@ -32,6 +32,9 @@
           "...": "../blocks/cards/_*.json#/definitions"
         },
         {
+          "...": "../blocks/custom-cards/_*.json#/definitions"
+        },
+        {
           "...": "../blocks/carousel/_*.json#/definitions"
         },
         {
