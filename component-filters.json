@@ -11,7 +11,6 @@
       "hero",
       "accordion",
       "cards",
-      "custom-cards",
       "carousel",
       "columns",
       "commerce-account-header",
@@ -45,8 +44,7 @@
       "product-list-page",
       "product-recommendations",
       "targeted-block",
-      "text",
-      "heading"
+      "text"
     ]
   },
   {
@@ -82,12 +80,6 @@
     "components": [
       "text",
       "image"
-    ]
-  },
-  {
-    "id": "cards",
-    "components": [
-      "card"
     ]
   }
 ]
