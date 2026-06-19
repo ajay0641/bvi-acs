@@ -1,0 +1,4 @@
+/*! Copyright 2026 Adobe
+All Rights Reserved. */
+import{jsx as o}from"@dropins/tools/preact-jsx-runtime.js";import{deepmerge as c,Render as g}from"@dropins/tools/lib.js";import{useState as a,useEffect as p}from"@dropins/tools/preact-hooks.js";import{UIProvider as d}from"@dropins/tools/components.js";import{events as u}from"@dropins/tools/event-bus.js";import{c as l}from"./chunks/initialize.js";const D={"":{}},S={default:D},U=({children:t})=>{var e;const[r,i]=a("en_US");p(()=>{const n=u.on("locale",m=>{i(m)},{eager:!0});return()=>{n==null||n.off()}},[]);const s=(e=l.getConfig())==null?void 0:e.langDefinitions,f=c(S,s??{});return o(d,{lang:r,langDefinitions:f,children:t})},w=new g(o(U,{}));export{w as render};
+//# sourceMappingURL=render.js.map

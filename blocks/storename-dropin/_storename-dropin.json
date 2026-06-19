@@ -1,0 +1,15 @@
+{
+  "definitions": [{
+    "title": "Storename Dropin",
+    "id": "storename-dropin",
+    "model": "storename-dropin",
+    "plugins": {
+      "da": {
+        "rows": 1,
+        "columns": 2
+      }
+    }
+  }],
+  "models": [],
+  "filters": []
+}

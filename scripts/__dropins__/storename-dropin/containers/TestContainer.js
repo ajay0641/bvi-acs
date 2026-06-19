@@ -1,0 +1,4 @@
+/*! Copyright 2026 Adobe
+All Rights Reserved. */
+import{jsxs as n,jsx as r}from"@dropins/tools/preact-jsx-runtime.js";import{classes as s}from"@dropins/tools/lib.js";import{t as c}from"../chunks/testFunction.js";import"@dropins/tools/fetch-graphql.js";const m=({className:e,storeName:t="Loading...",...o})=>n("div",{...o,className:s(["testdropin-test-component",e]),children:[r("h2",{children:"Store Information"}),n("p",{children:["Store Name: ",r("strong",{children:t})]})]}),d=({className:e,initialData:t,...o})=>{const a=(t==null?void 0:t.storeName)??"Unable to load";return r("div",{...o,className:s(["testdropin-test-container",e]),children:r(m,{storeName:a})})};d.getInitialData=async()=>{try{return{storeName:(await c()).store_name}}catch(e){return console.error(e),{storeName:"Unable to load"}}};export{d as TestContainer,d as default};
+//# sourceMappingURL=TestContainer.js.map
