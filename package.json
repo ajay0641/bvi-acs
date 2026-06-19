@@ -42,6 +42,7 @@
     "stylelint-config-standard": "40.0.0"
   },
   "dependencies": {
+    "@adobe-commerce/elsie": "^1.9.0",
     "@adobe/adobe-client-data-layer": "^3.0.1",
     "@adobe/magento-storefront-event-collector": "^1.15.0",
     "@adobe/magento-storefront-events-sdk": "^1.15.0",

@@ -34,5 +34,11 @@ module.exports = {
         'import/no-extraneous-dependencies': 'off',
       },
     },
+    {
+      files: ['blocks/storename-dropin/storename-dropin.js'],
+      rules: {
+        'import/no-unresolved': 'off',
+      },
+    },
   ],
 };
