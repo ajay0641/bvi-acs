@@ -35,7 +35,10 @@ module.exports = {
       },
     },
     {
-      files: ['blocks/storename-dropin/storename-dropin.js'],
+      files: [
+        'blocks/storename-dropin/storename-dropin.js',
+        'scripts/initializers/storename-dropin.js',
+      ],
       rules: {
         'import/no-unresolved': 'off',
       },
