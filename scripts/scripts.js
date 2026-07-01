@@ -200,6 +200,15 @@ function loadDelayed() {
 }
 
 async function loadPage() {
+  // Handle /categories/* URLs that don't have working folder mapping.
+  // Redirect to the template page with the category path preserved
+  // in the query parameter so the product-list-page block can use it.
+  const { pathname } = window.location;
+  if (pathname.startsWith('/categories/') && pathname !== '/categories/default') {
+    window.location.replace(`/categories/default?cp=${encodeURIComponent(pathname)}`);
+    return;
+  }
+
   await loadEager(document);
   await loadLazy(document);
   loadDelayed();

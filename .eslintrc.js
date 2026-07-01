@@ -38,6 +38,8 @@ module.exports = {
       files: [
         'blocks/storename-dropin/storename-dropin.js',
         'scripts/initializers/storename-dropin.js',
+        'blocks/menu-dropin/menu-dropin.js',
+        'scripts/initializers/menu-dropin.js',
       ],
       rules: {
         'import/no-unresolved': 'off',

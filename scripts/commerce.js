@@ -60,6 +60,14 @@ export const PRODUCT_TEMPLATE_PATHS = [
   'products/default',
 ];
 
+/**
+ * Category template paths - pages that are templates and should use
+ * default/fake category IDs. Should be relative to root path, ie "/" , "/fr/" , etc.
+ */
+export const CATEGORY_TEMPLATE_PATHS = [
+  'categories/default',
+];
+
 // PATHS
 export const SUPPORT_PATH = '/support';
 export const PRIVACY_POLICY_PATH = '/privacy-policy';
@@ -172,6 +180,10 @@ async function handleCommercePageType(pageType) {
   if (pageType === 'Product') {
     // initialize pdp
     await import('./initializers/pdp.js');
+  } else if (pageType === 'Category') {
+    // no eager initialization needed for Category pages;
+    // the product-list-page block handles its own initializers
+    // (search, wishlist) within its decorate() function.
   }
 }
 
@@ -630,6 +642,14 @@ function getSkuFromUrl() {
   return result?.[1];
 }
 
+function getCateIdFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const cp = urlParams.get('cp');
+  const path = cp ? decodeURIComponent(cp) : window.location.pathname;
+  const result = path.match(/\/categories\/(.+)\/([^/]+)$/);
+  return result?.[2];
+}
+
 /**
  * Extracts the defaultSku property from the product-details block element.
  * @returns {string|null} The defaultSku value from the block, or null if not found
@@ -650,6 +670,25 @@ function getDefaultSkuFromBlock() {
 }
 
 /**
+ * Extracts the defaultCategoryId property from the product-listing block element.
+ * @returns {string|null} The defaultCategoryId value from the block, or null if not found
+ */
+function getDefaultCateIdFromBlock() {
+  const productListingBlock = document.querySelector('.product-list-page.block');
+  if (!productListingBlock) {
+    console.warn('No product-list-page block found');
+    return null;
+  }
+
+  const config = readBlockConfig(productListingBlock);
+  if (!config.defaultcateid) {
+    console.warn('No defaultCategoryId found in product-list-page block');
+    return null;
+  }
+  return config.defaultcateid;
+}
+
+/**
  * Checks if the current page is a product template page.
  * @returns {boolean} True if the current page matches a product template path
  */
@@ -658,6 +697,20 @@ export function isProductTemplate() {
   const { pathname } = window.location;
 
   return PRODUCT_TEMPLATE_PATHS.some((templatePath) => {
+    const fullPath = root ? `${root}${templatePath}` : templatePath;
+    return pathname === fullPath || pathname === fullPath.replace(/\/$/, '');
+  });
+}
+
+/**
+ * Checks if the current page is a category template page.
+ * @returns {boolean} True if the current page matches a category template path
+ */
+export function isCategoryTemplate() {
+  const root = getRootPath();
+  const { pathname } = window.location;
+
+  return CATEGORY_TEMPLATE_PATHS.some((templatePath) => {
     const fullPath = root ? `${root}${templatePath}` : templatePath;
     return pathname === fullPath || pathname === fullPath.replace(/\/$/, '');
   });
@@ -675,6 +728,18 @@ export function getProductLink(urlKey, sku) {
   return rootLink(`/products/${sanitizedUrlKey}/${sanitizedSku}`);
 }
 
+export function getCategoryLink(urlKey, cateId) {
+  if (!urlKey) {
+    console.warn('getCategoryLink: urlKey is missing or empty', { urlKey, cateId });
+  }
+  if (!cateId) {
+    console.warn('getCategoryLink: cateId is missing or empty', { urlKey, cateId });
+  }
+  const sanitizedUrlKey = urlKey ? sanitizeName(urlKey) : '';
+  const sanitizedCateId = cateId ? sanitizeName(cateId) : '';
+  return rootLink(`/categories/${sanitizedUrlKey}/${sanitizedCateId}`);
+}
+
 /**
  * Gets the product SKU from metadata or URL fallback.
  * @returns {string|null} The SKU from metadata or URL, or null if not found
@@ -686,6 +751,31 @@ export function getProductSku() {
 
   return getMetadata('sku') || getSkuFromUrl();
 }
+
+/**
+ * Gets the category ID from metadata or URL fallback.
+ * @returns {string|null} The category ID from metadata or URL, or null if not found
+ */
+export function getCateId() {
+  if (isCategoryTemplate() && (IS_UE || IS_DA)) {
+    return getDefaultCateIdFromBlock();
+  }
+
+  return getMetadata('cateId') || getCateIdFromUrl();
+}
+
+/**
+ * Gets the category ID from metadata or block config (for template pages in UE/DA).
+ * Follows the same pattern as getProductSku().
+ * @returns {string|null} The category ID from block config (UE/DA) or null
+ */
+// export function getCategoryId() {
+//   if (isCategoryTemplate() && (IS_UE || IS_DA)) {
+//     return getDefaultCateIdFromBlock();
+//   }
+
+//   return null;
+// }
 
 /**
  * Extracts option UIDs from the URL search parameters.

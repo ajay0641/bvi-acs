@@ -1,0 +1,17 @@
+{
+  "definitions": [
+    {
+      "title": "Menu Dropin",
+      "id": "menu-dropin",
+      "model": "menu-dropin",
+      "plugins": {
+        "da": {
+          "rows": 1,
+          "columns": 2
+        }
+      }
+    }
+  ],
+  "models": [],
+  "filters": []
+}

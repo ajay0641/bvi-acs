@@ -15,19 +15,48 @@ import { tryRenderAemAssetsImage } from '@dropins/tools/lib/aem/assets.js';
 // Event Bus
 import { events } from '@dropins/tools/event-bus.js';
 // AEM
+import {
+  fetchPlaceholders,
+  getProductLink,
+} from '../../scripts/commerce.js';
 import { readBlockConfig } from '../../scripts/aem.js';
-import { fetchPlaceholders, getProductLink } from '../../scripts/commerce.js';
 import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
 
 // Initializers
 import '../../scripts/initializers/search.js';
 import '../../scripts/initializers/wishlist.js';
 
+/**
+ * Extracts the category urlPath from the current URL.
+ * Matches the product URL pattern: /categories/{urlPath}/{cateId}
+ * @returns {string|null} The category urlPath, or null if not a category URL
+ */
+function getCategoryPathFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const cp = urlParams.get('cp');
+  const path = cp ? decodeURIComponent(cp) : window.location.pathname;
+  const result = path.match(/\/categories\/(.+)\/([^/]+)$/);
+  if (result) {
+    return result[1]; // urlPath
+  }
+  return null;
+}
+
 export default async function decorate(block) {
   const labels = await fetchPlaceholders();
 
   const config = readBlockConfig(block);
   const pageSize = parseInt(config.pagesize, 10) || 9;
+
+  // Override the authored urlpath with the actual category path from the URL.
+  // This is critical when the block is served via folder mapping
+  // (e.g., /categories/default page mapped to /categories/* paths).
+  // Without this override, all category pages would show products from the
+  // template's authored urlpath instead of the dynamically visited category.
+  const urlCategoryPath = getCategoryPathFromUrl();
+  if (urlCategoryPath) {
+    config.urlpath = urlCategoryPath;
+  }
 
   const fragment = document.createRange().createContextualFragment(`
     <div class="search__wrapper">
@@ -76,8 +105,7 @@ export default async function decorate(block) {
       pageSize,
       sort: searchState?.sort?.length ? searchState.sort : [{ attribute: 'position', direction: 'DESC' }],
       filter: [
-        { attribute: 'categoryPath', eq: config.urlpath }, // Add category filter
-        // Always add visibility filter to the request
+        { attribute: 'categoryPath', eq: config.urlpath }, // category filter
         visibilityFilter,
         ...userFilters,
       ],
@@ -85,13 +113,11 @@ export default async function decorate(block) {
       console.error('Error searching for products');
     });
   } else {
-    // Search page: dropin uses only the request (no URL parsing).
     await search({
       phrase: searchState.phrase,
       currentPage: searchState.currentPage,
       pageSize,
       sort: searchState.sort,
-      // Always add visibility filter to the request
       filter: [visibilityFilter, ...userFilters],
     }).catch((e) => {
       console.error('Error searching for products', e);
@@ -120,30 +146,17 @@ export default async function decorate(block) {
   };
 
   await Promise.all([
-    // Sort By
     provider.render(SortBy, {})($productSort),
-
-    // Pagination
     provider.render(Pagination, {
-      onPageChange: () => {
-        // scroll to the top of the page
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      },
+      onPageChange: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
     })($pagination),
-
-    // View Facets Button
     UI.render(Button, {
       children: labels.Global?.Filters,
       icon: Icon({ source: 'Burger' }),
       variant: 'secondary',
-      onClick: () => {
-        $facets.classList.toggle('search__facets--visible');
-      },
+      onClick: () => $facets.classList.toggle('search__facets--visible'),
     })($viewFacets),
-
-    // Facets
     provider.render(Facets, {})($facets),
-    // Product List
     provider.render(SearchResults, {
       routeProduct: (product) => getProductLink(product.urlKey, product.sku),
       slots: {
@@ -151,30 +164,21 @@ export default async function decorate(block) {
           const { product, defaultImageProps } = ctx;
           const anchorWrapper = document.createElement('a');
           anchorWrapper.href = getProductLink(product.urlKey, product.sku);
-
           tryRenderAemAssetsImage(ctx, {
             alias: product.sku,
             imageProps: defaultImageProps,
             wrapper: anchorWrapper,
-            params: {
-              width: defaultImageProps.width,
-              height: defaultImageProps.height,
-            },
+            params: { width: defaultImageProps.width, height: defaultImageProps.height },
           });
         },
         ProductActions: (ctx) => {
           const actionsWrapper = document.createElement('div');
           actionsWrapper.className = 'product-discovery-product-actions';
-          // Add to Cart Button
           const addToCartBtn = getAddToCartButton(ctx.product);
           addToCartBtn.className = 'product-discovery-product-actions__add-to-cart';
-          // Wishlist Button
           const $wishlistToggle = document.createElement('div');
           $wishlistToggle.classList.add('product-discovery-product-actions__wishlist-toggle');
-          wishlistRender.render(WishlistToggle, {
-            product: ctx.product,
-            variant: 'tertiary',
-          })($wishlistToggle);
+          wishlistRender.render(WishlistToggle, { product: ctx.product, variant: 'tertiary' })($wishlistToggle);
           actionsWrapper.appendChild(addToCartBtn);
           actionsWrapper.appendChild($wishlistToggle);
           ctx.replaceWith(actionsWrapper);
@@ -183,18 +187,12 @@ export default async function decorate(block) {
     })($productList),
   ]);
 
-  // Listen for search results (event is fired before the block is rendered; eager: true)
   events.on('search/result', (payload) => {
     const totalCount = payload.result?.totalCount || 0;
-
     block.classList.toggle('product-list-page--empty', totalCount === 0);
-
-    // Results Info
     $resultInfo.innerHTML = payload.request?.phrase
       ? `${totalCount} results found for <strong>"${payload.request.phrase}"</strong>.`
       : `${totalCount} results found.`;
-
-    // Update the view facets button with the number of filters
     if (payload.request.filter.length > 0) {
       $viewFacets.querySelector('button').setAttribute('data-count', payload.request.filter.length);
     } else {
@@ -202,11 +200,11 @@ export default async function decorate(block) {
     }
   }, { eager: true });
 
-  // Listen for search results (event is fired after the block is rendered; eager: false)
-  // URL is owned by this project; update it when search state changes.
   events.on('search/result', (payload) => {
     const url = new URL(window.location.href);
     applySearchStateToUrl(url, payload.request);
     window.history.pushState({}, '', url.toString());
   }, { eager: false });
+
+  return Promise.resolve();
 }

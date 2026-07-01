@@ -18,3 +18,4 @@ mountpoints:
 # See: https://github.com/adobe-rnd/aem-commerce-prerender
 folders:
   /products/: /products/default
+  /categories/: /categories/default

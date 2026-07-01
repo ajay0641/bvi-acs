@@ -1,0 +1,40 @@
+/* storename-dropin block styles */
+
+/* .storename-dropin {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-medium);
+  background-color: var(--color-neutral-100);
+  border: var(--shape-border-width-1) solid var(--color-neutral-300);
+  border-radius: var(--shape-border-radius-2);
+  box-shadow: var(--shape-shadow-3);
+  margin: var(--spacing-medium) auto;
+  max-width: 600px;
+}
+
+.storename-dropin .testdropin-test-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--spacing-xsmall);
+  width: 100%;
+}
+
+.storename-dropin .testdropin-test-component h2 {
+  font: var(--type-headline-1-font);
+  color: var(--color-brand-600);
+  margin: 0 0 var(--spacing-xxsmall);
+}
+
+.storename-dropin .testdropin-test-component p {
+  font: var(--type-body-1-default-font);
+  color: var(--color-neutral-700);
+  margin: 0;
+}
+
+.storename-dropin .testdropin-test-component strong {
+  font: var(--type-body-1-strong-font);
+  color: var(--color-neutral-900);
+} */
