@@ -38,3 +38,7 @@
   font: var(--type-body-1-strong-font);
   color: var(--color-neutral-900);
 } */
+.section.menu-dropin-container {
+  width: 100%;
+  margin: 1rem 0;
+}

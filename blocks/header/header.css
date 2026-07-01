@@ -24,7 +24,7 @@ header nav {
   gap: 0 16px;
   margin: auto;
   max-width: 1248px;
-  height: var(--nav-height);
+  /* height: var(--nav-height); */
   padding: 0 24px;
   font-family: var(--type-base-font-family);
 }
@@ -48,6 +48,7 @@ header nav[aria-expanded='true'] {
     gap: 0 32px;
     max-width: 1264px;
     padding: 0 32px;
+    flex-wrap: wrap;
   }
 
   header nav[aria-expanded='true'] {
@@ -585,6 +586,9 @@ header .nav-search-input .search_autocomplete .popover-container {
 
 .overlay.show {
   display: block;
+}
+header {
+  height: auto;
 }
 
 @media (max-width: 899px) {
