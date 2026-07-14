@@ -1,0 +1,16 @@
+{
+  "name": "plp-metadata",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Generate bulk metadata for category (PLP) pages",
+  "main": "plp-metadata.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "start": "node plp-metadata.js"
+  },
+  "dependencies": {
+    "he": "^1.2.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  }
+}

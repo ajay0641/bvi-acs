@@ -642,12 +642,43 @@ function getSkuFromUrl() {
   return result?.[1];
 }
 
-function getCateIdFromUrl() {
-  const urlParams = new URLSearchParams(window.location.search);
+/**
+ * Extracts category urlPath and id from the current URL or ?cp= param.
+ * @param {Document} [doc=document]
+ * @returns {{ urlPath: string, cateId: string }|null}
+ */
+export function getCategoryFromUrl(doc = document) {
+  const win = doc.defaultView || window;
+  const urlParams = new URLSearchParams(win.location.search);
   const cp = urlParams.get('cp');
-  const path = cp ? decodeURIComponent(cp) : window.location.pathname;
+  const path = cp ? decodeURIComponent(cp) : win.location.pathname;
   const result = path.match(/\/categories\/(.+)\/([^/]+)$/);
-  return result?.[2];
+  if (result) {
+    return { urlPath: result[1], cateId: result[2] };
+  }
+  return null;
+}
+
+function getCateIdFromUrl() {
+  return getCategoryFromUrl()?.cateId || null;
+}
+
+/**
+ * Detects server-rendered category JSON-LD from overlay or bulk metadata.
+ * @param {Document} [doc=document]
+ * @returns {boolean}
+ */
+export function isCategoryPrerendered(doc = document) {
+  return [...doc.querySelectorAll('script[type="application/ld+json"]')].some((script) => {
+    if (script.dataset.name === 'category-list') return true;
+    try {
+      const data = JSON.parse(script.textContent);
+      if (data?.['@type'] === 'ItemList') return true;
+      return data?.['@graph']?.some((node) => node?.['@type'] === 'ItemList');
+    } catch {
+      return false;
+    }
+  });
 }
 
 /**

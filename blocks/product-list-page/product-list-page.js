@@ -18,6 +18,13 @@ import { events } from '@dropins/tools/event-bus.js';
 import {
   fetchPlaceholders,
   getProductLink,
+  getCategoryFromUrl,
+  isCategoryPrerendered,
+  isCategoryTemplate,
+  IS_DA,
+  IS_UE,
+  CS_FETCH_GRAPHQL,
+  setJsonLd,
 } from '../../scripts/commerce.js';
 import { readBlockConfig } from '../../scripts/aem.js';
 import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
@@ -27,19 +34,116 @@ import '../../scripts/initializers/search.js';
 import '../../scripts/initializers/wishlist.js';
 
 /**
- * Extracts the category urlPath from the current URL.
- * Matches the product URL pattern: /categories/{urlPath}/{cateId}
- * @returns {string|null} The category urlPath, or null if not a category URL
+ * Builds ItemList + BreadcrumbList JSON-LD from PLP search results when the
+ * server-rendered category overlay did not provide schema.
+ * @param {object} payload search/result event payload
+ * @param {string} categoryPath catalog urlPath
  */
-function getCategoryPathFromUrl() {
-  const urlParams = new URLSearchParams(window.location.search);
-  const cp = urlParams.get('cp');
-  const path = cp ? decodeURIComponent(cp) : window.location.pathname;
-  const result = path.match(/\/categories\/(.+)\/([^/]+)$/);
-  if (result) {
-    return result[1]; // urlPath
+function setCategoryJsonLd(payload, categoryPath) {
+  const items = payload?.result?.items || [];
+  if (!categoryPath || items.length === 0) return;
+
+  const categoryMeta = getCategoryFromUrl();
+  const categoryUrl = categoryMeta
+    ? `${window.location.origin}/categories/${categoryMeta.urlPath}/${categoryMeta.cateId}`
+    : window.location.href.split('?')[0];
+  const categoryName = categoryPath.split('/').pop()?.replace(/-/g, ' ') || categoryPath;
+
+  const itemListElement = items.slice(0, 8).map((product, index) => {
+    const amount = product.priceRange?.minimum?.final?.amount || product.price?.final?.amount;
+    let imageUrl = product.images?.[0]?.url || '';
+    if (imageUrl.startsWith('//')) {
+      imageUrl = `https:${imageUrl}`;
+    }
+    const productUrl = new URL(
+      getProductLink(product.urlKey, product.sku),
+      window.location.origin,
+    ).href;
+
+    return {
+      '@type': 'ListItem',
+      position: index + 1,
+      item: {
+        '@type': 'Product',
+        name: product.name,
+        url: productUrl,
+        image: imageUrl || undefined,
+        offers: amount?.value != null ? {
+          '@type': 'Offer',
+          price: amount.value,
+          priceCurrency: amount.currency || 'USD',
+          availability: product.inStock
+            ? 'https://schema.org/InStock'
+            : 'https://schema.org/OutOfStock',
+        } : undefined,
+      },
+    };
+  });
+
+  setJsonLd({
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'ItemList',
+        '@id': `${categoryUrl}#list`,
+        name: categoryName,
+        url: categoryUrl,
+        numberOfItems: payload.result?.totalCount || items.length,
+        itemListOrder: 'https://schema.org/ItemListOrderAscending',
+        itemListElement,
+      },
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: [
+          {
+            '@type': 'ListItem',
+            position: 1,
+            name: 'Home',
+            item: `${window.location.origin}/`,
+          },
+          {
+            '@type': 'ListItem',
+            position: 2,
+            name: categoryName,
+            item: categoryUrl,
+          },
+        ],
+      },
+    ],
+  }, 'category-list');
+
+  // Prefer category name in the document title when server metadata did not set one
+  if (!isCategoryPrerendered() && !document.querySelector('meta[name="title"]')?.content) {
+    document.title = categoryName.charAt(0).toUpperCase() + categoryName.slice(1);
   }
-  return null;
+}
+
+/**
+ * Resolves catalog urlPath for template preview in DA/UE when only defaultCateId is authored.
+ * @param {string} categoryId Catalog category ID from block config
+ * @returns {Promise<string|null>} Category urlPath or null
+ */
+async function resolveUrlPathFromCategoryId(categoryId) {
+  if (!categoryId) return null;
+
+  const query = `
+    query ResolveCategoryUrlPath($ids: [String!]!) {
+      categories(ids: $ids, roles: ["active"]) {
+        urlPath
+      }
+    }
+  `;
+
+  try {
+    const { data } = await CS_FETCH_GRAPHQL.fetchGraphQl(query, {
+      method: 'POST',
+      variables: { ids: [categoryId] },
+    });
+    return data?.categories?.[0]?.urlPath || null;
+  } catch (e) {
+    console.warn('Failed to resolve category urlPath for template preview', e);
+    return null;
+  }
 }
 
 export default async function decorate(block) {
@@ -47,15 +151,25 @@ export default async function decorate(block) {
 
   const config = readBlockConfig(block);
   const pageSize = parseInt(config.pagesize, 10) || 9;
+  const categoryMeta = getCategoryFromUrl();
+  const hasPrerenderedMarkup = block.dataset.prerendered === 'true';
+  const hasServerCategoryJsonLd = isCategoryPrerendered();
 
   // Override the authored urlpath with the actual category path from the URL.
   // This is critical when the block is served via folder mapping
   // (e.g., /categories/default page mapped to /categories/* paths).
   // Without this override, all category pages would show products from the
   // template's authored urlpath instead of the dynamically visited category.
-  const urlCategoryPath = getCategoryPathFromUrl();
+  const urlCategoryPath = categoryMeta?.urlPath
+    || block.dataset.categoryUrlPath
+    || getCategoryFromUrl()?.urlPath;
   if (urlCategoryPath) {
     config.urlpath = urlCategoryPath;
+  } else if (!config.urlpath && config.defaultcateid && isCategoryTemplate() && (IS_UE || IS_DA)) {
+    const resolvedPath = await resolveUrlPathFromCategoryId(config.defaultcateid);
+    if (resolvedPath) {
+      config.urlpath = resolvedPath;
+    }
   }
 
   const fragment = document.createRange().createContextualFragment(`
@@ -75,14 +189,23 @@ export default async function decorate(block) {
   const $productSort = fragment.querySelector('.search__product-sort');
   const $productList = fragment.querySelector('.search__product-list');
   const $pagination = fragment.querySelector('.search__pagination');
+  const $searchWrapper = fragment.querySelector('.search__wrapper');
+  const fallbackNodes = hasPrerenderedMarkup ? [...block.childNodes] : [];
 
-  block.innerHTML = '';
+  if (hasPrerenderedMarkup) {
+    $searchWrapper.hidden = true;
+  } else {
+    block.innerHTML = '';
+  }
   block.appendChild(fragment);
 
   // Add url path back to the block for enrichment, incase enrichment block is
   // executed after the plp block and block config is not available
   if (config.urlpath) {
     block.dataset.urlpath = config.urlpath;
+  }
+  if (categoryMeta?.cateId) {
+    block.dataset.categoryId = categoryMeta.cateId;
   }
 
   const searchState = getSearchStateFromUrl(new URL(window.location.href));
@@ -97,6 +220,7 @@ export default async function decorate(block) {
   window.history.replaceState({}, '', normalizedUrl.toString());
 
   // Request search based on the page type on block load
+  let searchSucceeded = true;
   if (config.urlpath) {
     // If it's a category page...
     await search({
@@ -110,6 +234,7 @@ export default async function decorate(block) {
         ...userFilters,
       ],
     }).catch(() => {
+      searchSucceeded = false;
       console.error('Error searching for products');
     });
   } else {
@@ -120,6 +245,7 @@ export default async function decorate(block) {
       sort: searchState.sort,
       filter: [visibilityFilter, ...userFilters],
     }).catch((e) => {
+      searchSucceeded = false;
       console.error('Error searching for products', e);
     });
   }
@@ -187,6 +313,14 @@ export default async function decorate(block) {
     })($productList),
   ]);
 
+  // Keep semantic server markup available if Product Discovery fails. Once the
+  // interactive containers are ready, replace only the fallback nodes.
+  if (hasPrerenderedMarkup && searchSucceeded) {
+    fallbackNodes.forEach((node) => node.remove());
+    $searchWrapper.hidden = false;
+    block.dataset.enhanced = 'true';
+  }
+
   events.on('search/result', (payload) => {
     const totalCount = payload.result?.totalCount || 0;
     block.classList.toggle('product-list-page--empty', totalCount === 0);
@@ -197,6 +331,10 @@ export default async function decorate(block) {
       $viewFacets.querySelector('button').setAttribute('data-count', payload.request.filter.length);
     } else {
       $viewFacets.querySelector('button').removeAttribute('data-count');
+    }
+
+    if (config.urlpath && !hasServerCategoryJsonLd) {
+      setCategoryJsonLd(payload, config.urlpath);
     }
   }, { eager: true });
 
