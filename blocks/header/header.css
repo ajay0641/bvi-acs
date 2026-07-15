@@ -24,6 +24,7 @@ header nav {
   gap: 0 16px;
   margin: auto;
   max-width: 1248px;
+
   /* height: var(--nav-height); */
   padding: 0 24px;
   font-family: var(--type-base-font-family);
@@ -587,6 +588,7 @@ header .nav-search-input .search_autocomplete .popover-container {
 .overlay.show {
   display: block;
 }
+
 header {
   height: auto;
 }
