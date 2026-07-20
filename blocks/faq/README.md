@@ -47,3 +47,33 @@ Answers are expected as HTML and rendered inside each accordion panel.
 1. Insert the **FAQ** block on any page or fragment.
 2. Optionally set **Heading**.
 3. Preview / publish — FAQs load from App Builder at runtime.
+
+## CORS (required)
+
+The FAQ block calls the App Builder / API Mesh GraphQL URL from the browser. The mesh must allow your storefront origins.
+
+If the console shows `Access-Control-Allow-Origin` mismatches (e.g. the mesh returns its own URL instead of `http://localhost:3000`), update the mesh `responseConfig.CORS` and redeploy:
+
+```json
+{
+  "meshConfig": {
+    "responseConfig": {
+      "CORS": {
+        "origin": [
+          "http://localhost:3000",
+          "https://main--bvi-acs--ajay0641.aem.page",
+          "https://main--bvi-acs--ajay0641.aem.live"
+        ],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allowedHeaders": ["Content-Type"],
+        "maxAge": 86400,
+        "credentials": false
+      }
+    }
+  }
+}
+```
+
+Add feature-branch preview origins (`https://{branch}--bvi-acs--ajay0641.aem.page`) and your production domain as needed.
+
+Docs: [API Mesh CORS headers](https://developer.adobe.com/graphql-mesh-gateway/mesh/advanced/cors)

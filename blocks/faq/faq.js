@@ -1,8 +1,6 @@
 import { getConfigValue } from '@dropins/tools/lib/aem/configs.js';
 import { readBlockConfig } from '../../scripts/aem.js';
 
-const DEFAULT_FAQ_ENDPOINT = 'https://edge-sandbox-graph.adobe.io/api/9ecd7a2c-dfa9-4989-a596-8f6e27335271/graphql';
-
 const FAQ_QUERY = `{
   faqs {
     id
@@ -12,19 +10,17 @@ const FAQ_QUERY = `{
 }`;
 
 /**
- * Resolves the GraphQL endpoint from block config, site config, or default.
+ * Resolves the GraphQL endpoint from block config or site config.
  * @param {Record<string, string>} config
  * @returns {string}
  */
 function resolveEndpoint(config) {
   if (config.endpoint) return config.endpoint;
-  try {
-    const fromConfig = getConfigValue('faq-endpoint');
-    if (fromConfig) return fromConfig;
-  } catch (error) {
-    // config may not be initialized yet during early decoration
+  const fromConfig = getConfigValue('faq-endpoint');
+  if (!fromConfig) {
+    throw new Error('Missing faq-endpoint in config.json');
   }
-  return DEFAULT_FAQ_ENDPOINT;
+  return fromConfig;
 }
 
 /**
@@ -81,7 +77,6 @@ function createFaqItem(faq) {
 export default async function decorate(block) {
   const config = readBlockConfig(block);
   const heading = config.heading || '';
-  const endpoint = resolveEndpoint(config);
 
   block.textContent = '';
   block.classList.add('loading');
@@ -99,6 +94,7 @@ export default async function decorate(block) {
   block.append(list);
 
   try {
+    const endpoint = resolveEndpoint(config);
     const faqs = await fetchFaqs(endpoint);
 
     if (!faqs.length) {
@@ -122,7 +118,9 @@ export default async function decorate(block) {
     console.error('Failed to load FAQs:', error);
     const message = document.createElement('p');
     message.className = 'faq-error';
-    message.textContent = 'Unable to load FAQs. Please try again later.';
+    message.textContent = error?.name === 'TypeError'
+      ? 'Unable to load FAQs (network/CORS). Ensure the API Mesh allows this origin.'
+      : 'Unable to load FAQs. Please try again later.';
     list.append(message);
   } finally {
     block.classList.remove('loading');

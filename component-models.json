@@ -413,6 +413,24 @@
         "name": "heading",
         "label": "Heading",
         "valueType": "string"
+      },
+      {
+        "component": "text",
+        "name": "storeCode",
+        "label": "Store Code",
+        "valueType": "string"
+      },
+      {
+        "component": "text",
+        "name": "categorySlug",
+        "label": "Category Slug",
+        "valueType": "string"
+      },
+      {
+        "component": "text",
+        "name": "customerGroupId",
+        "label": "Customer Group Id",
+        "valueType": "string"
       }
     ]
   },

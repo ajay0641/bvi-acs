@@ -42,6 +42,19 @@ function buildHeroBlock(main) {
 }
 
 /**
+ * Appends FAQ block as the last section of the page main when not already authored.
+ * Skips fragment/footer mains (those also call decorateMain via loadFragment).
+ * @param {Element} main The container element
+ */
+function buildFaqBlock(main) {
+  if (main !== document.querySelector('main')) return;
+  if (main.querySelector('.faq')) return;
+  const section = document.createElement('div');
+  section.append(buildBlock('faq', [['Heading', 'Frequently Asked Questions']]));
+  main.append(section);
+}
+
+/**
  * load fonts.css and set a session storage flag
  */
 async function loadFonts() {
@@ -78,6 +91,7 @@ function buildAutoBlocks(main) {
     }
 
     if (!main.querySelector('.hero')) buildHeroBlock(main);
+    buildFaqBlock(main);
   } catch (error) {
     console.error('Auto Blocking failed', error);
   }
