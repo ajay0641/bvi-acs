@@ -55,6 +55,9 @@
         },
         {
           "...": "../blocks/title-desc/_*.json#/definitions"
+        },
+        {
+          "...": "../blocks/faq/_*.json#/definitions"
         }
       ]
     },

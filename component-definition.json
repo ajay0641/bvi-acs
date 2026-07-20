@@ -592,6 +592,16 @@
               ]
             }
           }
+        },
+        {
+          "title": "FAQ",
+          "id": "faq",
+          "model": "faq",
+          "plugins": {
+            "da": {
+              "type": "key-value-block"
+            }
+          }
         }
       ]
     },
