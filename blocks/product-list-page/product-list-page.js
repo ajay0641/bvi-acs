@@ -33,6 +33,11 @@ import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
 import '../../scripts/initializers/search.js';
 import '../../scripts/initializers/wishlist.js';
 
+/** Default PLP card image size (matches Product Discovery SearchResults defaults). */
+const PLP_IMAGE_DIMENSIONS = {
+  width: 400,
+  height: 450,
+};
 /**
  * Builds ItemList + BreadcrumbList JSON-LD from PLP search results when the
  * server-rendered category overlay did not provide schema.
@@ -285,16 +290,27 @@ export default async function decorate(block) {
     provider.render(Facets, {})($facets),
     provider.render(SearchResults, {
       routeProduct: (product) => getProductLink(product.urlKey, product.sku),
+      imageWidth: PLP_IMAGE_DIMENSIONS.width,
+      imageHeight: PLP_IMAGE_DIMENSIONS.height,
       slots: {
         ProductImage: (ctx) => {
           const { product, defaultImageProps } = ctx;
+          const width = defaultImageProps.width || PLP_IMAGE_DIMENSIONS.width;
+          const height = defaultImageProps.height || PLP_IMAGE_DIMENSIONS.height;
           const anchorWrapper = document.createElement('a');
           anchorWrapper.href = getProductLink(product.urlKey, product.sku);
+          // Drop-in defaultImageProps.params only includes width; without height, srcset
+          // becomes ?height=NaN and Commerce media URLs fail to load.
           tryRenderAemAssetsImage(ctx, {
             alias: product.sku,
-            imageProps: defaultImageProps,
+            imageProps: {
+              ...defaultImageProps,
+              width,
+              height,
+              params: { ...defaultImageProps.params, width, height },
+            },
             wrapper: anchorWrapper,
-            params: { width: defaultImageProps.width, height: defaultImageProps.height },
+            params: { width, height },
           });
         },
         ProductActions: (ctx) => {

@@ -34,7 +34,7 @@ import {
 } from '../../scripts/commerce.js';
 
 // Initializers
-import { IMAGES_SIZES } from '../../scripts/initializers/pdp.js';
+import { IMAGES_SIZES, THUMBNAIL_SIZES } from '../../scripts/initializers/pdp.js';
 import '../../scripts/initializers/cart.js';
 import '../../scripts/initializers/wishlist.js';
 
@@ -185,6 +185,9 @@ export default async function decorate(block) {
       imageParams: {
         ...IMAGES_SIZES,
       },
+      thumbnailParams: {
+        ...THUMBNAIL_SIZES,
+      },
 
       slots: gallerySlots,
     })($galleryMobile),
@@ -199,6 +202,9 @@ export default async function decorate(block) {
       videos: true, // Display videos if available
       imageParams: {
         ...IMAGES_SIZES,
+      },
+      thumbnailParams: {
+        ...THUMBNAIL_SIZES,
       },
 
       slots: gallerySlots,
@@ -540,18 +546,28 @@ function setMetaTags(product) {
 
 /**
  * Returns the configuration for an image slot.
+ * Ensures params include both width and height so srcset URLs are valid.
  * @param ctx - The context of the slot.
  * @returns The configuration for the image slot.
  */
 function imageSlotConfig(ctx) {
   const { data, defaultImageProps } = ctx;
+  const { width, height } = defaultImageProps;
   return {
     alias: data.sku,
-    imageProps: defaultImageProps,
-
+    imageProps: {
+      ...defaultImageProps,
+      width,
+      height,
+      params: {
+        ...defaultImageProps.params,
+        width,
+        height,
+      },
+    },
     params: {
-      width: defaultImageProps.width,
-      height: defaultImageProps.height,
+      width,
+      height,
     },
   };
 }

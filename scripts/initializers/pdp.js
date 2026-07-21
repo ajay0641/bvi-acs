@@ -19,6 +19,11 @@ export const IMAGES_SIZES = {
   height: 1191,
 };
 
+export const THUMBNAIL_SIZES = {
+  width: 200,
+  height: 248,
+};
+
 /**
  * Extracts the main product image URL from JSON-LD or meta tags
  * @returns {string|null} The image URL or null if not found
