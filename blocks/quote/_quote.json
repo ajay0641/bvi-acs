@@ -1,0 +1,34 @@
+{
+  "definitions": [
+    {
+      "title": "Quote",
+      "id": "quote",
+      "model": "quote",
+      "plugins": {
+        "da": {
+          "rows": 1,
+          "columns": 1,
+          "fields": [
+            { "name": "quote", "selector": "div:nth-child(1)" }
+          ]
+        }
+      }
+    }
+  ],
+  "models": [
+    {
+      "id": "quote",
+      "fields": [
+        {
+          "component": "richtext",
+          "valueType": "string",
+          "name": "quote",
+          "value": "",
+          "label": "Quote",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "filters": []
+}
