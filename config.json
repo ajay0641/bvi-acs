@@ -10,7 +10,9 @@
         "cs": {
           "Magento-Store-Code": "main_website_store",
           "Magento-Store-View-Code": "default",
-          "Magento-Website-Code": "base"
+          "Magento-Website-Code": "base",
+          "Magento-Environment-Id": "4XR4RKXgJjQXaxUCMC6TN3",
+          "x-api-key": "search_service"
         }
       },
       "commerce-b2b-enabled": false,
