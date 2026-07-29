@@ -214,15 +214,11 @@ function loadDelayed() {
 }
 
 async function loadPage() {
-  // Folder mapping (/categories/: → /categories/default) is deprecated and often
-  // unavailable locally / until site config is updated via Helix Admin API.
-  // Redirect to the template and pass the original path so PLP can resolve urlPath.
-  const { pathname } = window.location;
-  if (pathname.startsWith('/categories/') && pathname !== '/categories/default') {
-    window.location.replace(`/categories/default?cp=${encodeURIComponent(pathname)}`);
-    return;
-  }
-
+  // The category prerenderer publishes complete HTML directly to each category path
+  // (e.g., /categories/office/4) with full metadata and JSON-LD in the server response.
+  // AEM serves this prerendered HTML directly, so no redirect to /categories/default
+  // is needed. The product-list-page block's decorate() reads the category info from
+  // the URL path via getCategoryFromUrl() and from the prerendered block data attributes.
   await loadEager(document);
   await loadLazy(document);
   loadDelayed();
