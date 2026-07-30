@@ -28,6 +28,7 @@ import {
 } from '../../scripts/commerce.js';
 import { readBlockConfig } from '../../scripts/aem.js';
 import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
+import { createPriceFacetSlider, isPriceRangeFacet } from './price-facet-slider.js';
 
 // Initializers
 import '../../scripts/initializers/search.js';
@@ -276,6 +277,8 @@ export default async function decorate(block) {
     return button;
   };
 
+  let $priceFacetSlider = null;
+
   await Promise.all([
     provider.render(SortBy, {})($productSort),
     provider.render(Pagination, {
@@ -287,7 +290,17 @@ export default async function decorate(block) {
       variant: 'secondary',
       onClick: () => $facets.classList.toggle('search__facets--visible'),
     })($viewFacets),
-    provider.render(Facets, {})($facets),
+    provider.render(Facets, {
+      slots: {
+        Facet: (ctx) => {
+          if (!isPriceRangeFacet(ctx.data)) return;
+          if (!$priceFacetSlider) {
+            $priceFacetSlider = createPriceFacetSlider(ctx.data);
+          }
+          ctx.replaceWith($priceFacetSlider);
+        },
+      },
+    })($facets),
     provider.render(SearchResults, {
       routeProduct: (product) => getProductLink(product.urlKey, product.sku),
       imageWidth: PLP_IMAGE_DIMENSIONS.width,
