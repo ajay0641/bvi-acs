@@ -1,12 +1,18 @@
 import { search } from '@dropins/storefront-product-discovery/api.js';
 import { events } from '@dropins/tools/event-bus.js';
-import { getPriceFormatter } from '@dropins/tools/lib.js';
 
 /**
  * @typedef {object} SearchFacet
  * @property {string} title
  * @property {string} attribute
  * @property {Array<object>} buckets
+ */
+
+/**
+ * @typedef {object} PriceFacetSliderOptions
+ * @property {boolean} [autoApply=true] When false, slider only updates UI / onChange
+ * @property {(range: { from: number, to: number|null }) => void} [onChange]
+ * @property {string} [currency='USD']
  */
 
 let lastSearchRequest = null;
@@ -16,6 +22,21 @@ events.on('search/result', (payload) => {
     lastSearchRequest = payload.request;
   }
 }, { eager: true });
+
+/**
+ * @param {string} currency
+ * @returns {Intl.NumberFormat}
+ */
+function createPriceFormatter(currency = 'USD') {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency: currency || 'USD',
+    });
+  } catch {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+  }
+}
 
 /**
  * Parses numeric bounds from price facet buckets (RangeBucket).
@@ -82,10 +103,17 @@ function getInitialRange(facet, boundMin, boundMax) {
 /**
  * Builds a price range slider facet to replace default price radio buckets.
  * @param {SearchFacet} facet
- * @param {string} [currency='USD']
+ * @param {PriceFacetSliderOptions|string} [optionsOrCurrency]
  * @returns {HTMLElement}
  */
-export function createPriceFacetSlider(facet, currency = 'USD') {
+export function createPriceFacetSlider(facet, optionsOrCurrency = {}) {
+  const options = typeof optionsOrCurrency === 'string'
+    ? { currency: optionsOrCurrency }
+    : (optionsOrCurrency || {});
+  const autoApply = options.autoApply !== false;
+  const { onChange } = options;
+  const currency = options.currency || 'USD';
+
   const { min: boundMin, max: boundMax, openEndedMax } = getPriceBounds(facet);
   const step = 1;
   let { from, to } = getInitialRange(facet, boundMin, boundMax);
@@ -135,7 +163,7 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
 
   let debounceId;
   let currencyCode = currency;
-  let formatPrice = getPriceFormatter({ currency: currencyCode });
+  let formatPrice = createPriceFormatter(currencyCode);
 
   const filterToApiMax = (maxValue) => {
     if (openEndedMax && maxValue >= boundMax) {
@@ -146,6 +174,15 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
 
   const isFullRange = (minValue, maxValue) => minValue <= boundMin
     && maxValue >= boundMax;
+
+  const getPendingRange = () => {
+    const minVal = Number(minInput.value);
+    const maxVal = Number(maxInput.value);
+    if (isFullRange(minVal, maxVal)) {
+      return null;
+    }
+    return { from: minVal, to: filterToApiMax(maxVal) };
+  };
 
   const updateDisplay = () => {
     const minVal = Number(minInput.value);
@@ -164,22 +201,11 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
   const applyFilter = () => {
     if (!lastSearchRequest) return;
 
-    const minVal = Number(minInput.value);
-    const maxVal = Number(maxInput.value);
+    const range = getPendingRange();
     const otherFilters = lastSearchRequest.filter.filter((f) => f.attribute !== 'price');
-
-    let filter;
-    if (isFullRange(minVal, maxVal)) {
-      filter = otherFilters;
-    } else {
-      filter = [
-        ...otherFilters,
-        {
-          attribute: 'price',
-          range: { from: minVal, to: filterToApiMax(maxVal) },
-        },
-      ];
-    }
+    const filter = range
+      ? [...otherFilters, { attribute: 'price', range }]
+      : otherFilters;
 
     search({
       ...lastSearchRequest,
@@ -194,6 +220,12 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
   const scheduleFilter = () => {
     clearTimeout(debounceId);
     debounceId = setTimeout(applyFilter, 300);
+  };
+
+  const emitChange = () => {
+    if (typeof onChange === 'function') {
+      onChange(getPendingRange());
+    }
   };
 
   const syncInputs = (source) => {
@@ -213,7 +245,10 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
     from = minVal;
     to = maxVal;
     updateDisplay();
-    scheduleFilter();
+    emitChange();
+    if (autoApply) {
+      scheduleFilter();
+    }
   };
 
   minInput.addEventListener('input', () => syncInputs(minInput));
@@ -222,6 +257,30 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
   root.dataset.boundMin = String(boundMin);
   root.dataset.boundMax = String(boundMax);
   root.dataset.openEndedMax = openEndedMax ? 'true' : 'false';
+  root.dataset.autoApply = autoApply ? 'true' : 'false';
+
+  /**
+   * @returns {{ from: number, to: number }|null}
+   */
+  root.getPendingPriceRange = getPendingRange;
+
+  /**
+   * @param {{ from?: number, to?: number }|null} range
+   */
+  root.setPriceRange = (range) => {
+    if (!range || !Number.isFinite(range.from) || !Number.isFinite(range.to)) {
+      minInput.value = String(boundMin);
+      maxInput.value = String(boundMax);
+      updateDisplay();
+      return;
+    }
+    minInput.value = String(Math.max(boundMin, range.from));
+    const displayMax = openEndedMax && range.to > boundMax
+      ? boundMax
+      : Math.min(boundMax, range.to);
+    maxInput.value = String(Number.isFinite(displayMax) ? displayMax : boundMax);
+    updateDisplay();
+  };
 
   root.syncPriceFacetFromSearch = (payload) => {
     const items = payload?.result?.items || [];
@@ -229,7 +288,7 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
       || items[0]?.priceRange?.minimum?.regular?.amount?.currency;
     if (itemCurrency && itemCurrency !== currencyCode) {
       currencyCode = itemCurrency;
-      formatPrice = getPriceFormatter({ currency: currencyCode });
+      formatPrice = createPriceFormatter(currencyCode);
     }
 
     const priceFilter = payload?.request?.filter?.find((f) => f.attribute === 'price');
@@ -253,6 +312,8 @@ export function createPriceFacetSlider(facet, currency = 'USD') {
 
 events.on('search/result', (payload) => {
   document.querySelectorAll('.product-list-page-price-facet').forEach((el) => {
+    // Deferred (button-apply) sliders are synced by the deferred panel instead.
+    if (el.dataset.autoApply === 'false') return;
     if (typeof el.syncPriceFacetFromSearch === 'function') {
       el.syncPriceFacetFromSearch(payload);
     }

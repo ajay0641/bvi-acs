@@ -29,6 +29,8 @@ import {
 import { readBlockConfig } from '../../scripts/aem.js';
 import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
 import { createPriceFacetSlider, isPriceRangeFacet } from './price-facet-slider.js';
+import { createDeferredFacetPanel } from './deferred-facet-panel.js';
+import { resolveFacetApplyMode, isButtonApplyMode } from './facet-apply-config.js';
 
 // Initializers
 import '../../scripts/initializers/search.js';
@@ -227,9 +229,13 @@ export default async function decorate(block) {
 
   // Request search based on the page type on block load
   let searchSucceeded = true;
+  /** @type {object|null} */
+  let initialSearchResult = null;
+  /** @type {object|null} */
+  let initialSearchRequest = null;
   if (config.urlpath) {
     // If it's a category page...
-    await search({
+    initialSearchRequest = {
       phrase: '', // search all products in the category
       currentPage: searchState.currentPage,
       pageSize,
@@ -239,20 +245,24 @@ export default async function decorate(block) {
         visibilityFilter,
         ...userFilters,
       ],
-    }).catch(() => {
+    };
+    initialSearchResult = await search(initialSearchRequest).catch(() => {
       searchSucceeded = false;
       console.error('Error searching for products');
+      return null;
     });
   } else {
-    await search({
+    initialSearchRequest = {
       phrase: searchState.phrase,
       currentPage: searchState.currentPage,
       pageSize,
       sort: searchState.sort,
       filter: [visibilityFilter, ...userFilters],
-    }).catch((e) => {
+    };
+    initialSearchResult = await search(initialSearchRequest).catch((e) => {
       searchSucceeded = false;
       console.error('Error searching for products', e);
+      return null;
     });
   }
 
@@ -277,9 +287,54 @@ export default async function decorate(block) {
     return button;
   };
 
+  const facetApplyMode = resolveFacetApplyMode(config);
+  const buttonApply = isButtonApplyMode(facetApplyMode);
+  let lastSearchRequest = initialSearchRequest;
   let $priceFacetSlider = null;
+  let $deferredFacetPanel = null;
+  let latestFacets = initialSearchResult?.facets || [];
 
-  await Promise.all([
+  events.on('search/result', (payload) => {
+    if (payload?.request) {
+      lastSearchRequest = payload.request;
+    }
+    if (Array.isArray(payload?.result?.facets)) {
+      latestFacets = payload.result.facets;
+      if (buttonApply && $deferredFacetPanel) {
+        $deferredFacetPanel.updateFacets(latestFacets);
+      }
+    }
+  }, { eager: true });
+
+  if (!latestFacets.length && initialSearchResult?.facets?.length) {
+    latestFacets = initialSearchResult.facets;
+  }
+
+  const facetSlots = {};
+
+  if (buttonApply) {
+    // Mount deferred panel directly — do not rely on Facets slot lifecycle.
+    $facets.replaceChildren();
+    $deferredFacetPanel = createDeferredFacetPanel({
+      getLastRequest: () => lastSearchRequest,
+      applyLabel: labels.Global?.ApplyFilters || labels.Global?.Apply || 'Apply',
+      clearLabel: labels.Global?.ClearFilters || labels.Global?.Clear || 'Clear',
+      clearAllLabel: labels.Search?.Facet?.clearAll || labels.Global?.ClearAll || 'Clear all',
+    });
+    $facets.appendChild($deferredFacetPanel);
+    $facets.classList.add('search__facets--button-apply');
+    $deferredFacetPanel.updateFacets(latestFacets);
+  } else {
+    facetSlots.Facet = (ctx) => {
+      if (!isPriceRangeFacet(ctx.data)) return;
+      if (!$priceFacetSlider) {
+        $priceFacetSlider = createPriceFacetSlider(ctx.data);
+      }
+      ctx.replaceWith($priceFacetSlider);
+    };
+  }
+
+  const renders = [
     provider.render(SortBy, {})($productSort),
     provider.render(Pagination, {
       onPageChange: () => window.scrollTo({ top: 0, behavior: 'smooth' }),
@@ -290,17 +345,6 @@ export default async function decorate(block) {
       variant: 'secondary',
       onClick: () => $facets.classList.toggle('search__facets--visible'),
     })($viewFacets),
-    provider.render(Facets, {
-      slots: {
-        Facet: (ctx) => {
-          if (!isPriceRangeFacet(ctx.data)) return;
-          if (!$priceFacetSlider) {
-            $priceFacetSlider = createPriceFacetSlider(ctx.data);
-          }
-          ctx.replaceWith($priceFacetSlider);
-        },
-      },
-    })($facets),
     provider.render(SearchResults, {
       routeProduct: (product) => getProductLink(product.urlKey, product.sku),
       imageWidth: PLP_IMAGE_DIMENSIONS.width,
@@ -340,7 +384,19 @@ export default async function decorate(block) {
         },
       },
     })($productList),
-  ]);
+  ];
+
+  // Instant mode still uses the Facets drop-in (with price slider slot).
+  if (!buttonApply) {
+    renders.push(provider.render(Facets, { slots: facetSlots })($facets));
+  }
+
+  await Promise.all(renders);
+
+  // Ensure deferred panel is populated after containers mount.
+  if (buttonApply && $deferredFacetPanel) {
+    $deferredFacetPanel.updateFacets(latestFacets);
+  }
 
   // Keep semantic server markup available if Product Discovery fails. Once the
   // interactive containers are ready, replace only the fallback nodes.
