@@ -11,7 +11,7 @@
  * 3. Remote filter-config-public API (`filterApplyMode`: instant|apply)
  * 4. DEFAULT_FACET_APPLY_MODE
  *
- * Endpoint: config.json → `filter-config-endpoint`
+ * Endpoint: config.json → `filter-config-endpoint` only (no hard-coded Adobe I/O URL).
  */
 import { getConfigValue } from '@dropins/tools/lib/aem/configs.js';
 
@@ -73,16 +73,40 @@ function modeFromUrl() {
 }
 
 /**
- * Reads the filter-config API URL from config.json (sync after initializeConfig).
- * @returns {string}
+ * Reads filter-config-endpoint from the same-origin /config.json file.
+ * Used when initializeConfig() / sessionStorage still has an older config without the key.
+ * @returns {Promise<string>}
  */
-function getFilterConfigEndpoint() {
+async function fetchFilterConfigEndpointFromConfigJson() {
   try {
-    return String(getConfigValue('filter-config-endpoint') || '').trim();
+    const response = await fetch(`${window.location.origin}/config.json`, {
+      cache: 'no-store',
+      credentials: 'same-origin',
+    });
+    if (!response.ok) return '';
+    const config = await response.json();
+    const url = config?.public?.default?.['filter-config-endpoint'];
+    return String(url || '').trim();
   } catch (e) {
-    console.warn('Could not read filter-config-endpoint from config', e);
+    console.warn('Could not load filter-config-endpoint from /config.json', e);
     return '';
   }
+}
+
+/**
+ * Resolves API URL from storefront config (session/init first, then fresh /config.json).
+ * @returns {Promise<string>}
+ */
+async function getFilterConfigEndpoint() {
+  try {
+    const fromRuntime = String(getConfigValue('filter-config-endpoint') || '').trim();
+    if (fromRuntime) return fromRuntime;
+  } catch (e) {
+    console.warn('Could not read filter-config-endpoint from runtime config', e);
+  }
+
+  // Stale sessionStorage often caches config for ~2h without new keys; re-read file.
+  return fetchFilterConfigEndpointFromConfigJson();
 }
 
 /**
@@ -132,7 +156,7 @@ async function parseFilterConfigResponse(response) {
  * @returns {Promise<'instant'|'button'|null>}
  */
 export async function fetchFacetApplyModeFromApi(url) {
-  const endpoint = (url && String(url).trim()) || getFilterConfigEndpoint();
+  const endpoint = (url && String(url).trim()) || await getFilterConfigEndpoint();
   if (!endpoint) {
     console.warn('filter-config-endpoint is not set in config.json');
     return null;
@@ -159,7 +183,6 @@ export async function fetchFacetApplyModeFromApi(url) {
       console.warn('Filter config API returned unknown filterApplyMode:', raw, data);
       return null;
     }
-    // Surface for DevTools without noise on every navigation retry.
     console.info('[PLP] filterApplyMode from API:', raw, '→', mode);
     return mode;
   } catch (e) {
@@ -195,14 +218,15 @@ export async function resolveFacetApplyMode(blockConfig = {}, options = {}) {
   }
 
   if (!cachedModePromise) {
-    const endpoint = options.endpoint || getFilterConfigEndpoint();
-    cachedModePromise = fetchFacetApplyModeFromApi(endpoint).then((mode) => {
+    cachedModePromise = (async () => {
+      const endpoint = options.endpoint || await getFilterConfigEndpoint();
+      const mode = await fetchFacetApplyModeFromApi(endpoint);
       if (!mode) {
         // Allow a later PLP decorate to retry after a failed fetch.
         cachedModePromise = null;
       }
       return mode;
-    });
+    })();
   }
 
   const fromApi = await cachedModePromise;
@@ -211,7 +235,7 @@ export async function resolveFacetApplyMode(blockConfig = {}, options = {}) {
     console.warn(
       '[PLP] Using fallback filterApplyMode:',
       resolved,
-      '(API unavailable — admin toggle will not reflect until CORS is fixed)',
+      '(API unavailable — check filter-config-endpoint in config.json and API CORS)',
     );
   }
   return resolved;
