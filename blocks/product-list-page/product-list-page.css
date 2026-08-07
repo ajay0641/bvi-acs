@@ -186,11 +186,16 @@
     gap: var(--spacing-small);
 }
 
-.block.product-list-page .product-list-page-facet-panel__selected {
+.block.product-list-page .product-list-page-facet-panel__selected:not([hidden]) {
     display: flex;
     flex-wrap: wrap;
     gap: var(--spacing-xxsmall);
     margin-block-end: var(--spacing-xsmall);
+}
+
+/* Prefer our chips for continuous price + clear-all; hide drop-in SelectedFacets. */
+.block.product-list-page .search__facets--instant-apply .product-discovery-facet-list__selected-filters {
+    display: none;
 }
 
 .block.product-list-page .product-list-page-facet-panel__chip {

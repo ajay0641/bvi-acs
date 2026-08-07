@@ -30,6 +30,7 @@ import { readBlockConfig } from '../../scripts/aem.js';
 import { getSearchStateFromUrl, applySearchStateToUrl } from './search-url.js';
 import { createPriceFacetSlider, isPriceRangeFacet } from './price-facet-slider.js';
 import { createDeferredFacetPanel } from './deferred-facet-panel.js';
+import { createSelectedFacetChips } from './selected-facet-chips.js';
 import { resolveFacetApplyMode, isButtonApplyMode } from './facet-apply-config.js';
 
 // Initializers
@@ -287,12 +288,15 @@ export default async function decorate(block) {
     return button;
   };
 
-  const facetApplyMode = resolveFacetApplyMode(config);
+  const facetApplyMode = await resolveFacetApplyMode(config);
   const buttonApply = isButtonApplyMode(facetApplyMode);
+  block.dataset.facetApplyMode = facetApplyMode;
   let lastSearchRequest = initialSearchRequest;
   let $priceFacetSlider = null;
   let $deferredFacetPanel = null;
+  let $selectedFacetChips = null;
   let latestFacets = initialSearchResult?.facets || [];
+  const clearAllLabel = labels.Search?.Facet?.clearAll || labels.Global?.ClearAll || 'Clear all';
 
   events.on('search/result', (payload) => {
     if (payload?.request) {
@@ -311,6 +315,8 @@ export default async function decorate(block) {
   }
 
   const facetSlots = {};
+  /** Host for Facets drop-in (instant mode only). */
+  let $facetsDropinHost = $facets;
 
   if (buttonApply) {
     // Mount deferred panel directly — do not rely on Facets slot lifecycle.
@@ -319,12 +325,25 @@ export default async function decorate(block) {
       getLastRequest: () => lastSearchRequest,
       applyLabel: labels.Global?.ApplyFilters || labels.Global?.Apply || 'Apply',
       clearLabel: labels.Global?.ClearFilters || labels.Global?.Clear || 'Clear',
-      clearAllLabel: labels.Search?.Facet?.clearAll || labels.Global?.ClearAll || 'Clear all',
+      clearAllLabel,
     });
     $facets.appendChild($deferredFacetPanel);
     $facets.classList.add('search__facets--button-apply');
     $deferredFacetPanel.updateFacets(latestFacets);
   } else {
+    // Instant mode: chips above drop-in Facets (drop-in SelectedFacets does not handle
+    // continuous price ranges from the slider, and can look empty after custom price UI).
+    $facets.replaceChildren();
+    $selectedFacetChips = createSelectedFacetChips({
+      getLastRequest: () => lastSearchRequest,
+      getFacetTitles: () => new Map(latestFacets.map((f) => [f.attribute, f.title])),
+      clearAllLabel,
+    });
+    $facetsDropinHost = document.createElement('div');
+    $facetsDropinHost.className = 'search__facets-dropin';
+    $facets.append($selectedFacetChips, $facetsDropinHost);
+    $facets.classList.add('search__facets--instant-apply');
+
     facetSlots.Facet = (ctx) => {
       if (!isPriceRangeFacet(ctx.data)) return;
       if (!$priceFacetSlider) {
@@ -332,6 +351,8 @@ export default async function decorate(block) {
       }
       ctx.replaceWith($priceFacetSlider);
     };
+
+    $selectedFacetChips.updateFromRequest(lastSearchRequest);
   }
 
   const renders = [
@@ -388,7 +409,7 @@ export default async function decorate(block) {
 
   // Instant mode still uses the Facets drop-in (with price slider slot).
   if (!buttonApply) {
-    renders.push(provider.render(Facets, { slots: facetSlots })($facets));
+    renders.push(provider.render(Facets, { slots: facetSlots })($facetsDropinHost));
   }
 
   await Promise.all(renders);
