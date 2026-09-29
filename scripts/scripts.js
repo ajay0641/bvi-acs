@@ -213,7 +213,7 @@ function loadDelayed() {
   // load anything that can be postponed to the latest here
 }
 
-async function loadPage() {
+export async function loadPage() {
   // The category prerenderer publishes complete HTML directly to each category path
   // (e.g., /categories/office/4) with full metadata and JSON-LD in the server response.
   // AEM serves this prerendered HTML directly, so no redirect to /categories/default
