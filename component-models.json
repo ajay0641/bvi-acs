@@ -24,10 +24,15 @@
         "description": "Index control via robots"
       },
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "sku",
         "label": "SKU",
-        "description": "Optional: Specify a product SKU for this page"
+        "description": "Optional: Specify a product SKU for this page",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "item"
+        }
       }
     ]
   },
@@ -413,24 +418,6 @@
         "name": "heading",
         "label": "Heading",
         "valueType": "string"
-      },
-      {
-        "component": "text",
-        "name": "storeCode",
-        "label": "Store Code",
-        "valueType": "string"
-      },
-      {
-        "component": "text",
-        "name": "categorySlug",
-        "label": "Category Slug",
-        "valueType": "string"
-      },
-      {
-        "component": "text",
-        "name": "customerGroupId",
-        "label": "Customer Group Id",
-        "valueType": "string"
       }
     ]
   },
@@ -480,10 +467,15 @@
     "id": "product-details",
     "fields": [
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "defaultSku",
         "label": "Default SKU",
-        "description": "Optional: Specify a default product SKU if this is a template page"
+        "description": "Optional: Specify a default product SKU if this is a template page",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "item"
+        }
       }
     ]
   },
@@ -497,10 +489,15 @@
         "description": "Catalog category urlPath (e.g. apparel). Required for DA preview and enrichment. Live category URLs override this value."
       },
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "defaultCateId",
         "label": "Default Category ID",
-        "description": "Optional: category ID for template preview in DA/UE when urlpath is not set (e.g. 2 for Apparel)"
+        "description": "Optional: category ID for template preview in DA/UE when urlpath is not set (e.g. 2 for Apparel)",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "folder"
+        }
       },
       {
         "component": "number",
@@ -521,9 +518,27 @@
         "required": true
       },
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "currentSku",
-        "label": "Current SKU"
+        "label": "Current SKU",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "item"
+        }
+      }
+    ]
+  },
+  {
+    "id": "quote",
+    "fields": [
+      {
+        "component": "richtext",
+        "valueType": "string",
+        "name": "quote",
+        "value": "",
+        "label": "Quote",
+        "required": true
       }
     ]
   },

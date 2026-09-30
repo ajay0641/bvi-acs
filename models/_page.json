@@ -25,10 +25,15 @@
           "description": "Index control via robots"
         },
         {
-          "component": "text",
+          "component": "commerce-picker:picker",
           "name": "sku",
           "label": "SKU",
-          "description": "Optional: Specify a product SKU for this page"
+          "description": "Optional: Specify a product SKU for this page",
+          "valueType": "string",
+          "commerce-picker": {
+            "selection-mode": "single",
+            "selection-type": "item"
+          }
         }
       ]
     }

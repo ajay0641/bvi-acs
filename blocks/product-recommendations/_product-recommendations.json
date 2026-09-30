@@ -22,9 +22,14 @@
           "required": true
         },
         {
-          "component": "text",
+          "component": "commerce-picker:picker",
           "name": "currentSku",
-          "label": "Current SKU"
+          "label": "Current SKU",
+          "valueType": "string",
+          "commerce-picker": {
+            "selection-mode": "single",
+            "selection-type": "item"
+          }
         }
       ]
     }

@@ -13,10 +13,15 @@
     "id": "product-details",
     "fields": [
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "defaultSku",
         "label": "Default SKU",
-        "description": "Optional: Specify a default product SKU if this is a template page"
+        "description": "Optional: Specify a default product SKU if this is a template page",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "item"
+        }
       }
     ]
   }],

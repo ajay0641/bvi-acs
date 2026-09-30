@@ -19,10 +19,15 @@
         "description": "Catalog category urlPath (e.g. apparel). Required for DA preview and enrichment. Live category URLs override this value."
       },
       {
-        "component": "text",
+        "component": "commerce-picker:picker",
         "name": "defaultCateId",
         "label": "Default Category ID",
-        "description": "Optional: category ID for template preview in DA/UE when urlpath is not set (e.g. 2 for Apparel)"
+        "description": "Optional: category ID for template preview in DA/UE when urlpath is not set (e.g. 2 for Apparel)",
+        "valueType": "string",
+        "commerce-picker": {
+          "selection-mode": "single",
+          "selection-type": "folder"
+        }
       },
       {
         "component": "number",
