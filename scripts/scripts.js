@@ -169,7 +169,10 @@ async function loadEager(doc) {
       loadErrorPage(418);
     }
     document.body.classList.add('appear');
-    await loadSection(main.querySelector('.section'), waitForFirstImage);
+    await loadSection(main.querySelector('.section'), (section) => {
+      if (document.body.classList.contains('quick-edit')) return Promise.resolve();
+      return waitForFirstImage(section);
+    });    
   }
 
   try {
